@@ -1,0 +1,33 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / VS Code cache and settings
+.vs/
+.vscode/
+.history/
+*.user
+*.userosscache
+*.sln.doccache
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.doccache
+*.sublime-project
+*.sublime-workspace
+
+# External Packages
+node_modules/
+*.nuget.props
+*.nuget.targets
+
+# Project specific ZIPs
+*.zip
