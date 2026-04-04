@@ -147,6 +147,37 @@ public class ConsoleUI
 
     private void RunStore()
     {
+    bool inStore = true;
+    while (inStore)
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new Rule("[yellow]Store Menu[/]").RuleStyle("grey"));
+
+        // 1. Add the Selection Menu
+        var choice = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("What would you like to do?")
+                .AddChoices(new[] { "Add to Inventory", "View Purchase History", "Back to Main Menu" }));
+
+        switch (choice)
+        {
+            case "Add to Inventory":
+                HandleAddToInventory(); // Your existing logic moved here
+                break;
+
+            case "View Purchase History":
+                ShowStoreHistory(); // The new history feature
+                break;
+
+            case "Back to Main Menu":
+                inStore = false;
+                break;
+        }
+    }
+    }
+
+    private void HandleAddToInventory()
+    {
         AnsiConsole.Clear();
         AnsiConsole.Write(new Rule("[yellow]Store: Add to Inventory[/]").RuleStyle("grey"));
 
@@ -154,9 +185,8 @@ public class ConsoleUI
         var inventory = dataManager.Inventory;
 
         string itemName = AnsiConsole.Ask<string>("What item did you [green]buy[/]?");
-
         var itemToUpdate = inventory.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
-        
+
         if (itemToUpdate == null)
         {
             itemToUpdate = new Ingredient { Name = itemName, Quantity = "0" };
@@ -169,20 +199,63 @@ public class ConsoleUI
 
         double currentStock = 0;
         double.TryParse(itemToUpdate.Quantity, out currentStock);
-        
-        itemToUpdate.Quantity = (currentStock + amountBought).ToString(); 
+        itemToUpdate.Quantity = (currentStock + amountBought).ToString();
 
         dataManager.SaveInventory();
 
-        AnsiConsole.MarkupLine("\n[bold green]SUCCESS![/]");
-        AnsiConsole.MarkupLine($"Added [white]{amountBought.ToString()}[/] to [white]{itemToUpdate.Name}[/].");
-        AnsiConsole.MarkupLine($"Total Cost: [bold yellow]${totalCost.ToString("F2")}[/]");
-        AnsiConsole.MarkupLine($"New Total Stock: [blue]{itemToUpdate.Quantity}[/]");
+        string date = DateTime.Now.ToString("MM/dd/yyyy");
+        string csvLine = $"{date},{itemToUpdate.Name},{amountBought},{totalCost:F2}\n";
+        File.AppendAllText("purchases.csv", csvLine); 
 
-        AnsiConsole.WriteLine("\nPress any key to return to the main menu...");
+        AnsiConsole.MarkupLine("\n[bold green]SUCCESS![/]");
+        AnsiConsole.MarkupLine($"Added [white]{amountBought}[/] to [white]{itemToUpdate.Name}[/].");
+        AnsiConsole.MarkupLine($"Total Cost: [bold yellow]${totalCost.ToString("F2")}[/]");
+        
+        AnsiConsole.WriteLine("\nPress any key to return...");
         Console.ReadKey(true);
     }
 
+    private void ShowStoreHistory()
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new Rule("[yellow]Store Purchase History[/]").RuleStyle("grey"));
+
+        if (!File.Exists("purchases.csv"))
+        {
+            AnsiConsole.MarkupLine("[red]No store history found yet.[/]");
+        }
+        else
+        {
+            var table = new Table().Border(TableBorder.Rounded);
+            table.AddColumn("[grey]Date[/]");
+            table.AddColumn("[yellow]Item[/]");
+            table.AddColumn("[blue]Qty[/]");
+            table.AddColumn("[green]Total Cost[/]");
+
+            var lines = File.ReadAllLines("purchases.csv");
+
+            foreach (var line in lines)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var columns = line.Split(',');
+
+                if (columns.Length >= 4)
+                {
+                    table.AddRow(
+                        columns[0],           
+                        columns[1],           
+                        columns[2],           
+                        $"${columns[3]}"      
+                    );
+                }
+            }
+            AnsiConsole.Write(table);
+        }
+
+        AnsiConsole.WriteLine("\nPress any key to return...");
+        Console.ReadKey(true);
+    }
+    
     private void ShowHistory()
     {
         dataManager.LoadTracker();
